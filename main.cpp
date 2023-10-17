@@ -2,31 +2,37 @@
 #include <vector>
 #include <ctime>
 #include <string>
-#include <windows.h>  // Подключение библиотеки Windows для Beep.
+#include <windows.h> // Подключение библиотеки для работы с Windows и Beep.
 
 using namespace std;
 
 class HangmanGame {
+private:
+    vector<string> words;  // Вектор загруженных слов.
+    string wordToGuess;    // Слово, которое нужно угадать.
+    vector<char> guessedLetters;  // Вектор угаданных букв.
+    time_t startTime;  // Время начала игры.
+    int maxTime;  // Максимальное время игры в секундах.
+    int maxAttempts;  // Максимальное количество попыток (ошибок).
+
 public:
     HangmanGame(const vector<string>& loadedWords) : words(loadedWords), maxTime(120), maxAttempts(5) {}
 
     void Run() {
-        // Выбираем случайное слово для угадывания и инициализируем время начала игры.
-        wordToGuess = ChooseWord();
+        wordToGuess = ChooseWord();  // Выбираем слово для угадывания.
         startTime = time(NULL);
         time_t currentTime;
         int timeLeft;
-        int attemptsLeft = maxAttempts;
+        int attemptsLeft = maxAttempts;  // Оставшееся количество попыток.
         int tone = 1000;  // Начальная тональность для Beep.
 
         while (attemptsLeft > 0) {
             currentTime = time(NULL);
             timeLeft = maxTime - difftime(currentTime, startTime);
 
-            // Если время вышло, игра завершается с звуковым сигналом и предложением сыграть ещё раз.
             if (timeLeft <= 0) {
-                Beep(tone, 300);
-                DisplayGameResultTimeout();
+                Beep(tone, 300);  // Звуковой сигнал при завершении времени.
+                DisplayGameResultTimeout();  // Вывод сообщения о завершении времени.
                 if (!PlayAgain()) {
                     return;
                 }
@@ -37,31 +43,28 @@ public:
                 tone = 1000;  // Сброс тональности.
             }
 
-            DisplayWord();  // Отображение угадываемого слова с учетом отгаданных букв.
+            DisplayWord();  // Отображение текущего состояния слова.
             cout << "Оставшееся время: " << timeLeft << " секунд." << endl;
             cout << "Попыток осталось: " << attemptsLeft << endl;
             cout << "Введите букву: ";
             string input;
             cin >> input;
 
-            // Обработка ввода игрока.
             if (input == "hint" && timeLeft > maxTime / 2) {
                 cout << "Подсказка: " << GetHint() << endl;
             } else if (input.length() == 1 && isalpha(input[0])) {
                 char guess = tolower(input[0]);
 
-                // Проверка, была ли уже отгадана эта буква.
                 if (IsGuessed(guess)) {
-                    Beep(tone, 300);
+                    Beep(tone, 300);  // Звуковой сигнал при вводе уже угаданной буквы.
                     cout << "Вы уже вводили эту букву." << endl;
                 } else {
                     guessedLetters.push_back(guess);
-                    // Если игрок выиграл, играется мелодия победы и предлагается начать заново.
                     if (IsWinner()) {
                         Beep(3000, 300);
                         Beep(100, 300);
-                        Beep(3000, 300);
-                        DisplayGameResultWin();
+                        Beep(3000, 300);  // Звуковой сигнал при победе.
+                        DisplayGameResultWin();  // Вывод сообщения о победе.
                         if (!PlayAgain()) {
                             return;
                         }
@@ -83,8 +86,7 @@ public:
             }
         }
 
-        // Если закончились попытки, выводится сообщение о проигрыше и предлагается начать заново.
-        DisplayGameResultLose();
+        DisplayGameResultLose();  // Вывод сообщения о проигрыше.
         if (PlayAgain()) {
             wordToGuess = ChooseWord();
             guessedLetters.clear();
@@ -94,20 +96,11 @@ public:
     }
 
 private:
-    vector<string> words;
-    string wordToGuess;
-    vector<char> guessedLetters;
-    time_t startTime;
-    int maxTime;
-    int maxAttempts;
-
-    // Выбор случайного слова из списка.
     string ChooseWord() const {
         srand(static_cast<unsigned>(time(NULL)));
-        return words[rand() % words.size()];
+        return words[rand() % words.size()];  // Выбор случайного слова.
     }
 
-    // Проверка, была ли уже отгадана буква.
     bool IsGuessed(char guess) const {
         for (char letter : guessedLetters) {
             if (guess == letter) {
@@ -117,7 +110,6 @@ private:
         return false;
     }
 
-    // Проверка, выиграл ли игрок, отгадав все буквы слова.
     bool IsWinner() const {
         for (char letter : wordToGuess) {
             bool found = false;
@@ -134,7 +126,6 @@ private:
         return true;
     }
 
-    // Проверка, присутствует ли буква в загаданном слове.
     bool IsLetterInWord(char letter) const {
         for (char l : wordToGuess) {
             if (l == letter) {
@@ -144,7 +135,6 @@ private:
         return false;
     }
 
-    // Генерация подсказки на основе отгаданных букв.
     string GetHint() const {
         string hint;
         for (int i = 0; i <= guessedLetters.size(); ++i) {
@@ -153,7 +143,6 @@ private:
         return hint;
     }
 
-    // Отображение угадываемого слова с подчеркиваниями для неотгаданных букв.
     void DisplayWord() const {
         for (char letter : wordToGuess) {
             bool found = false;
@@ -172,25 +161,21 @@ private:
         cout << endl;
     }
 
-    // Вывод сообщения о победе.
     void DisplayGameResultWin() const {
         cout << "Поздравляем, вы выиграли! Загаданное слово: " << wordToGuess << endl;
         cout << "Желаете сыграть ещё раз? (да/нет): ";
     }
 
-    // Вывод сообщения о времени, которое закончилось.
     void DisplayGameResultTimeout() const {
         cout << "Время вышло! Загаданное слово: " << wordToGuess << endl;
         cout << "Желаете сыграть ещё раз? (да/нет): ";
     }
 
-    // Вывод сообщения о проигрыше (закончились попытки).
     void DisplayGameResultLose() const {
         cout << "У вас закончились попытки! Загаданное слово: " << wordToGuess << endl;
         cout << "Желаете сыграть ещё раз? (да/нет): ";
     }
 
-    // Запрос у игрока на повторную игру.
     bool PlayAgain() const {
         string playAgain;
         cin >> playAgain;
@@ -198,14 +183,12 @@ private:
     }
 };
 
-// Загрузка списка слов из файла.
 vector<string> LoadWords(const string& filename) {
     vector<string> loadedWords;
     ifstream file(filename);
 
-    // Проверка на успешное открытие файла. В случае неудачи проигрывается звуковой сигнал.
     if (!file.is_open()) {
-        Beep(400, 300);
+        Beep(400, 300);  // Звуковой сигнал при ошибке открытия файла.
         cerr << "Ошибка: Не удается открыть файл с загруженными словами." << endl;
         exit(1);
     }
@@ -215,12 +198,12 @@ vector<string> LoadWords(const string& filename) {
         loadedWords.push_back(word);
     }
 
-    return loadedWords;
+    return loadedWords;  // Возвращаем вектор загруженных слов.
 }
 
 int main() {
-    vector<string> words = LoadWords("words.txt");
-    HangmanGame game(words);
-    game.Run();
+    vector<string> words = LoadWords("words.txt");  // Загрузка слов из файла.
+    HangmanGame game(words);  // Создание объекта игры.
+    game.Run();  // Запуск игры.
     return 0;
 }
